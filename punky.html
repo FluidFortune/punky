@@ -584,6 +584,20 @@
       <button class="btn-pub" id="publishBtn" onclick="publishToGitHub()">PUBLISH TO GITHUB →</button>
     </div>
 
+    <!-- Load existing post -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Edit Existing Post</div>
+      <div class="gh-status" id="loadStatus">Fetch your post list to edit</div>
+      <button class="btn-sec" id="fetchPostsBtn" onclick="fetchPostList()">FETCH POST LIST</button>
+      <div id="postPickerWrap" style="display:none">
+        <label class="sidebar-field-label" style="margin-top:.5rem">Select post</label>
+        <select id="postPicker" style="margin-bottom:.4rem">
+          <option value="">— choose a post —</option>
+        </select>
+        <button class="btn-sec" id="loadPostBtn" onclick="loadExistingPost()">LOAD INTO EDITOR</button>
+      </div>
+    </div>
+
     <!-- Local save -->
     <div class="sidebar-section">
       <div class="sidebar-label">Local</div>
@@ -1154,6 +1168,126 @@ function loadDraft() {
 // Auto-save draft every 60s
 setInterval(saveDraft, 60000);
 
+// ── LOAD EXISTING POST ────────────────────────────────
+async function fetchPostList() {
+  const { token, repo, branch } = getGHConfig();
+  if (!token || !repo) { toast('Configure GitHub settings first', 'err'); return; }
+
+  const btn    = document.getElementById('fetchPostsBtn');
+  const status = document.getElementById('loadStatus');
+  btn.textContent = 'FETCHING…';
+  status.textContent = 'Loading post list…';
+  status.className = 'gh-status';
+
+  try {
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/vnd.github+json'
+    };
+    const res = await fetch(
+      `https://api.github.com/repos/${repo}/contents/index.json`, { headers }
+    );
+    if (!res.ok) throw new Error('Could not fetch index.json — have you published any posts yet?');
+
+    const data     = await res.json();
+    const manifest = JSON.parse(atob(data.content.replace(/\n/g, '')));
+    const posts    = manifest.posts || [];
+
+    if (posts.length === 0) {
+      status.textContent = 'No posts found in this repo.';
+      status.className = 'gh-status err';
+      return;
+    }
+
+    // Populate picker
+    const picker = document.getElementById('postPicker');
+    picker.innerHTML = '<option value="">— choose a post —</option>';
+    posts.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = JSON.stringify(p);
+      opt.textContent = `${p.title} (${new Date(p.created).toLocaleDateString()})`;
+      picker.appendChild(opt);
+    });
+
+    document.getElementById('postPickerWrap').style.display = 'block';
+    status.textContent = `✓ ${posts.length} post${posts.length !== 1 ? 's' : ''} found`;
+    status.className = 'gh-status ok';
+
+  } catch (e) {
+    status.textContent = `✗ ${e.message}`;
+    status.className = 'gh-status err';
+    toast('Fetch failed', 'err');
+  } finally {
+    btn.textContent = 'FETCH POST LIST';
+  }
+}
+
+async function loadExistingPost() {
+  const picker = document.getElementById('postPicker');
+  if (!picker.value) { toast('Select a post first', 'err'); return; }
+
+  const meta    = JSON.parse(picker.value);
+  const { token, repo } = getGHConfig();
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: 'application/vnd.github+json'
+  };
+
+  const btn    = document.getElementById('loadPostBtn');
+  const status = document.getElementById('loadStatus');
+  btn.textContent = 'LOADING…';
+
+  try {
+    // Fetch the actual post HTML file
+    const res = await fetch(
+      `https://api.github.com/repos/${repo}/contents/${meta.url}`, { headers }
+    );
+    if (!res.ok) throw new Error('Could not fetch post file');
+
+    const data    = await res.json();
+    const html    = atob(data.content.replace(/\n/g, ''));
+
+    // Extract just the post body from between .post-body tags
+    const bodyMatch = html.match(/<div class="post-body">([\s\S]*?)<\/div>\s*<\/article>/);
+    const body = bodyMatch ? bodyMatch[1].trim() : '';
+
+    // Load metadata into sidebar fields
+    document.getElementById('postTitle').value    = meta.title    || '';
+    document.getElementById('postSlug').value     = meta.slug     || '';
+    document.getElementById('postSlug')._manual   = true;
+    document.getElementById('postExcerpt').value  = meta.excerpt  || '';
+    document.getElementById('slugDisplay').textContent = meta.slug || 'your-post-slug';
+
+    if (meta.category) {
+      const cat = document.getElementById('postCategory');
+      const opt = Array.from(cat.options).find(o => o.value === meta.category);
+      if (opt) cat.value = meta.category;
+    }
+
+    // Load tags
+    tags = meta.tags || [];
+    renderTags();
+
+    // Load body into editor
+    document.getElementById('editor').innerHTML = body;
+
+    // Store original created date so publish preserves it
+    document.getElementById('editor').dataset.createdISO = meta.created || '';
+
+    status.textContent = `✓ Loaded: ${meta.title}`;
+    status.className = 'gh-status ok';
+    toast('Post loaded — edit and republish', 'ok');
+    isDirty = true;
+
+  } catch (e) {
+    status.textContent = `✗ ${e.message}`;
+    status.className = 'gh-status err';
+    toast('Load failed', 'err');
+  } finally {
+    btn.textContent = 'LOAD INTO EDITOR';
+  }
+}
+
 // ── GITHUB ────────────────────────────────────────────
 function getGHConfig() {
   return {
@@ -1212,7 +1346,8 @@ async function publishToGitHub() {
   try {
     // ── 1. Check if post exists (get SHA + original created date) ──
     let sha         = null;
-    let createdDate = nowISO;
+    // Use created date from loaded post if available, otherwise check manifest
+    let createdDate = document.getElementById('editor').dataset.createdISO || nowISO;
 
     const check = await fetch(apiURL, { headers });
     if (check.ok) {
