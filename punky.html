@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PUNKY — Blog Editor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&family=Inter:wght@400;500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&family=Inter:wght@400;500&display=swap"></noscript>
   <style>
     :root {
       --black:     #050a05;
@@ -105,6 +106,8 @@
       transition: background 0.15s, color 0.15s;
       flex-shrink: 0;
       position: relative;
+      -webkit-user-select: none;
+      user-select: none;
     }
     .tb:hover { background: var(--panel); color: var(--text); }
     .tb:active { background: var(--green-mute); color: var(--green); }
@@ -490,41 +493,41 @@
 
   <!-- Text format -->
   <div class="toolbar-group">
-    <button class="tb" title="Bold" onclick="fmt('bold')"><svg viewBox="0 0 24 24"><path d="M6 4h8a4 4 0 0 1 0 8H6z"/><path d="M6 12h9a4 4 0 0 1 0 8H6z"/></svg></button>
-    <button class="tb" title="Italic" onclick="fmt('italic')"><svg viewBox="0 0 24 24"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg></button>
-    <button class="tb" title="Underline" onclick="fmt('underline')"><svg viewBox="0 0 24 24"><path d="M6 3v7a6 6 0 0 0 12 0V3"/><line x1="4" y1="21" x2="20" y2="21"/></svg></button>
-    <button class="tb" title="Strikethrough" onclick="fmt('strikeThrough')"><svg viewBox="0 0 24 24"><path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><line x1="4" y1="12" x2="20" y2="12"/></svg></button>
+    <button class="tb" title="Bold" onmousedown="event.preventDefault();fmt('bold')"><svg viewBox="0 0 24 24"><path d="M6 4h8a4 4 0 0 1 0 8H6z"/><path d="M6 12h9a4 4 0 0 1 0 8H6z"/></svg></button>
+    <button class="tb" title="Italic" onmousedown="event.preventDefault();fmt('italic')"><svg viewBox="0 0 24 24"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg></button>
+    <button class="tb" title="Underline" onmousedown="event.preventDefault();fmt('underline')"><svg viewBox="0 0 24 24"><path d="M6 3v7a6 6 0 0 0 12 0V3"/><line x1="4" y1="21" x2="20" y2="21"/></svg></button>
+    <button class="tb" title="Strikethrough" onmousedown="event.preventDefault();fmt('strikeThrough')"><svg viewBox="0 0 24 24"><path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><line x1="4" y1="12" x2="20" y2="12"/></svg></button>
   </div>
 
   <!-- Headings -->
   <div class="toolbar-group">
-    <button class="tb tb-wide" title="Heading 1" onclick="insertHeading(1)">H1</button>
-    <button class="tb tb-wide" title="Heading 2" onclick="insertHeading(2)">H2</button>
-    <button class="tb tb-wide" title="Heading 3" onclick="insertHeading(3)">H3</button>
+    <button class="tb tb-wide" title="Heading 1" onmousedown="event.preventDefault();insertHeading(1)">H1</button>
+    <button class="tb tb-wide" title="Heading 2" onmousedown="event.preventDefault();insertHeading(2)">H2</button>
+    <button class="tb tb-wide" title="Heading 3" onmousedown="event.preventDefault();insertHeading(3)">H3</button>
   </div>
 
   <!-- Structure -->
   <div class="toolbar-group">
-    <button class="tb" title="Bullet list" onclick="fmt('insertUnorderedList')"><svg viewBox="0 0 24 24"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1" fill="currentColor" stroke="none"/></svg></button>
-    <button class="tb" title="Numbered list" onclick="fmt('insertOrderedList')"><svg viewBox="0 0 24 24"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg></button>
-    <button class="tb" title="Pull quote" onclick="insertQuote()"><svg viewBox="0 0 24 24"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg></button>
-    <button class="tb" title="Horizontal rule" onclick="fmt('insertHorizontalRule')"><svg viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/></svg></button>
+    <button class="tb" title="Bullet list" onmousedown="event.preventDefault();fmt('insertUnorderedList')"><svg viewBox="0 0 24 24"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1" fill="currentColor" stroke="none"/></svg></button>
+    <button class="tb" title="Numbered list" onmousedown="event.preventDefault();fmt('insertOrderedList')"><svg viewBox="0 0 24 24"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg></button>
+    <button class="tb" title="Pull quote" onmousedown="event.preventDefault();insertQuote()"><svg viewBox="0 0 24 24"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg></button>
+    <button class="tb" title="Horizontal rule" onmousedown="event.preventDefault();fmt('insertHorizontalRule')"><svg viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/></svg></button>
   </div>
 
   <!-- Insert -->
   <div class="toolbar-group">
-    <button class="tb" title="Link" onclick="openModal('link')"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
-    <button class="tb" title="Image (or drag & drop)" onclick="openModal('image')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
-    <button class="tb" title="Embed video (YouTube/Vimeo)" onclick="openModal('video')"><svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></button>
-    <button class="tb" title="Code block" onclick="insertCode()"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></button>
-    <button class="tb" title="Inline code" onclick="fmt('formatBlock', 'code')"><svg viewBox="0 0 24 24"><path d="M8 9l-3 3 3 3m8-6l3 3-3 3"/></svg></button>
-    <button class="tb" title="Custom HTML / Script" onclick="openModal('html')"><svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg></button>
+    <button class="tb" title="Link" onmousedown="event.preventDefault();openModal('link')"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
+    <button class="tb" title="Image (or drag & drop)" onmousedown="event.preventDefault();openModal('image')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
+    <button class="tb" title="Embed video (YouTube/Vimeo)" onmousedown="event.preventDefault();openModal('video')"><svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></button>
+    <button class="tb" title="Code block" onmousedown="event.preventDefault();insertCode()"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></button>
+    <button class="tb" title="Inline code" onmousedown="event.preventDefault();fmt('formatBlock', 'code')"><svg viewBox="0 0 24 24"><path d="M8 9l-3 3 3 3m8-6l3 3-3 3"/></svg></button>
+    <button class="tb" title="Custom HTML / Script" onmousedown="event.preventDefault();openModal('html')"><svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg></button>
   </div>
 
   <!-- View -->
   <div class="toolbar-group">
-    <button class="tb tb-wide" title="Toggle preview" id="previewBtn" onclick="togglePreview()">PREVIEW</button>
-    <button class="tb tb-wide" title="Export HTML file" onclick="exportHTML()">EXPORT</button>
+    <button class="tb tb-wide" title="Toggle preview" id="previewBtn" onmousedown="event.preventDefault();togglePreview()">PREVIEW</button>
+    <button class="tb tb-wide" title="Export HTML file" onmousedown="event.preventDefault();exportHTML()">EXPORT</button>
   </div>
 
 </div>
@@ -548,9 +551,14 @@
       <label class="sidebar-field-label">Category</label>
       <select id="postCategory">
         <option value="tech">Tech</option>
-        <option value="privacy">Privacy</option>
         <option value="ai">AI</option>
         <option value="hardware">Hardware</option>
+        <option value="software">Software Development</option>
+        <option value="privacy">Privacy</option>
+        <option value="culture">Pop Culture</option>
+        <option value="politics">Politics</option>
+        <option value="philosophy">Philosophy</option>
+        <option value="music">Music</option>
         <option value="opinion">Opinion</option>
         <option value="project">Project Update</option>
       </select>
@@ -992,13 +1000,48 @@ function buildOutputHTML(previewOnly = false, createdISO = null, modifiedISO = n
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title} | Fluid Fortune</title>
   <meta name="description" content="${excerpt}">
+  <link rel="canonical" href="https://blog.fluidfortune.com/posts/${slug}.html">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://blog.fluidfortune.com/posts/${slug}.html">
   <meta property="og:title" content="${title}">
   <meta property="og:description" content="${excerpt}">
+  <meta property="og:site_name" content="Fluid Fortune">
   <meta property="article:published_time" content="${created.toISOString()}">
   <meta property="article:modified_time" content="${modified.toISOString()}">
   <meta property="article:tag" content="${tags.join(',')}">
+  <meta property="article:section" content="${category}">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "${title.replace(/"/g, '\')}",
+    "description": "${excerpt.replace(/"/g, '\')}",
+    "url": "https://blog.fluidfortune.com/posts/${slug}.html",
+    "datePublished": "${created.toISOString()}",
+    "dateModified": "${modified.toISOString()}",
+    "author": {
+      "@type": "Organization",
+      "name": "Fluid Fortune",
+      "url": "https://fluidfortune.com"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Fluid Fortune",
+      "url": "https://fluidfortune.com"
+    },
+    "keywords": "${tags.join(', ')}",
+    "articleSection": "${category}",
+    "inLanguage": "en-US",
+    "isPartOf": {
+      "@type": "Blog",
+      "name": "Fluid Fortune Blog",
+      "url": "https://blog.fluidfortune.com"
+    }
+  }
+  <\/script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&family=Inter:wght@400;500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&family=Inter:wght@400;500&display=swap"></noscript>
   <style>
     :root {
       --black:#050a05;--deep:#0d1117;--surface:#161b22;--border:#30363d;
@@ -1261,6 +1304,45 @@ async function updateManifest({ token, repo, branch, folder, headers,
     method: 'PUT', headers, body: JSON.stringify(mBody)
   });
   if (!mPut.ok) { const e = await mPut.json(); throw new Error('Manifest: ' + (e.message || mPut.status)); }
+
+  // ── Generate sitemap.xml ──
+  await updateSitemap({ token, repo, branch, headers, posts: manifest.posts });
+}
+
+async function updateSitemap({ token, repo, branch, headers, posts }) {
+  const sitemapURL = `https://api.github.com/repos/${repo}/contents/sitemap.xml`;
+
+  const urls = posts.map(p => `
+  <url>
+    <loc>https://blog.fluidfortune.com/${p.url}</loc>
+    <lastmod>${new Date(p.modified || p.created).toISOString().split('T')[0]}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>${p === posts[0] ? '1.0' : '0.8'}</priority>
+  </url>`).join('');
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://blog.fluidfortune.com/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>${urls}
+</urlset>`;
+
+  // Get existing SHA if it exists
+  let smSHA = null;
+  const smCheck = await fetch(sitemapURL, { headers });
+  if (smCheck.ok) { const d = await smCheck.json(); smSHA = d.sha; }
+
+  const smBody = {
+    message: 'Update sitemap.xml',
+    content: btoa(unescape(encodeURIComponent(xml))),
+    branch
+  };
+  if (smSHA) smBody.sha = smSHA;
+
+  await fetch(sitemapURL, { method: 'PUT', headers, body: JSON.stringify(smBody) });
+  // Sitemap failure is non-fatal — don't throw
 }
 
 // ── PERSIST GH SETTINGS ──────────────────────────────
