@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PUNKY — Blog Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&family=Inter:wght@400;500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&family=Inter:wght@400;500&display=swap"></noscript>
+  <style>
+    :root {
+      --black:     #050a05;
+      --deep:      #0d1117;
+      --surface:   #161b22;
+      --panel:     #1c2128;
+      --border:    #30363d;
+      --green:     #00ff41;
+      --green-dim: #00c032;
+      --green-mute:#1a3a1a;
+      --amber:     #ffb700;
+      --blue:      #58a6ff;
+      --text:      #e6edf3;
+      --text-dim:  #8b949e;
+      --text-muted:#484f58;
+      --red:       #f85149;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-ui:   'Inter', sans-serif;
+      --font-disp: 'Orbitron', monospace;
+      --toolbar-h: 48px;
+      --sidebar-w: 260px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+
+    body {
+      background: var(--deep);
+      color: var(--text);
+      font-family: var(--font-ui);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── TOP BAR ── */
+    .topbar {
+      height: 44px;
+      background: var(--black);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 1rem;
+      gap: 1rem;
+      flex-shrink: 0;
+      z-index: 100;
+    }
+    .topbar-logo {
+      font-family: var(--font-disp);
+      font-size: 0.85rem;
+      color: var(--green);
+      letter-spacing: 0.15em;
+      flex-shrink: 0;
+    }
+    .topbar-logo span { color: var(--text-muted); font-size: 0.6rem; margin-left: 0.4rem; letter-spacing: 0.1em; }
+    .topbar-spacer { flex: 1; }
+    .topbar-status {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+    }
+    .topbar-status.saved { color: var(--green-dim); }
+    .topbar-status.unsaved { color: var(--amber); }
+
+    /* ── TOOLBAR ── */
+    .toolbar {
+      height: var(--toolbar-h);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 0.75rem;
+      gap: 2px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+      overflow: hidden;
+    }
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 1px;
+      padding: 0 4px;
+      border-right: 1px solid var(--border);
+      height: 100%;
+    }
+    .toolbar-group:last-child { border-right: none; }
+    .tb {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      background: none;
+      border: none;
+      border-radius: 4px;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-family: var(--font-mono);
+      transition: background 0.15s, color 0.15s;
+      flex-shrink: 0;
+      position: relative;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .tb:hover { background: var(--panel); color: var(--text); }
+    .tb:active { background: var(--green-mute); color: var(--green); }
+    .tb svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .tb[title]:hover::after {
+      content: attr(title);
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 0.6rem;
+      letter-spacing: 0.05em;
+      padding: 2px 6px;
+      white-space: nowrap;
+      z-index: 200;
+      pointer-events: none;
+      font-family: var(--font-mono);
+    }
+    .tb-wide { width: auto; padding: 0 8px; font-size: 0.65rem; letter-spacing: 0.08em; }
+    .tb-sep { width: 1px; height: 20px; background: var(--border); margin: 0 2px; }
+
+    /* ── MAIN LAYOUT ── */
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--black);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      overflow-y: auto;
+    }
+    .sidebar-section {
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem;
+    }
+    .sidebar-label {
+      font-family: var(--font-mono);
+      font-size: 0.55rem;
+      letter-spacing: 0.2em;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+    }
+    .sidebar input, .sidebar select, .sidebar textarea {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--font-ui);
+      font-size: 0.8rem;
+      padding: 0.4rem 0.5rem;
+      border-radius: 4px;
+      margin-bottom: 0.4rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .sidebar input:focus, .sidebar select:focus, .sidebar textarea:focus {
+      border-color: var(--green-dim);
+    }
+    .sidebar textarea { resize: vertical; min-height: 60px; line-height: 1.4; }
+    .sidebar select option { background: var(--surface); }
+    .sidebar-field-label {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      margin-bottom: 0.25rem;
+      display: block;
+    }
+
+    /* Tags */
+    .tags-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 0.4rem;
+    }
+    .tag {
+      background: var(--green-mute);
+      color: var(--green-dim);
+      font-size: 0.6rem;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: var(--font-mono);
+      display: flex; align-items: center; gap: 3px;
+      cursor: pointer;
+    }
+    .tag:hover { background: var(--red); color: #fff; }
+
+    /* GitHub panel */
+    .gh-status {
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 0.5rem;
+    }
+    .gh-status.ok { color: var(--green-dim); }
+    .gh-status.err { color: var(--red); }
+
+    /* Buttons */
+    .btn-pub {
+      width: 100%;
+      background: var(--green-dim);
+      color: var(--black);
+      border: none;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      padding: 0.5rem;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background 0.15s;
+      margin-top: 0.25rem;
+    }
+    .btn-pub:hover { background: var(--green); }
+    .btn-pub:disabled { background: var(--text-muted); cursor: not-allowed; }
+    .btn-sec {
+      width: 100%;
+      background: none;
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      padding: 0.4rem;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: border-color 0.15s, color 0.15s;
+      margin-top: 0.25rem;
+    }
+    .btn-sec:hover { border-color: var(--blue); color: var(--blue); }
+
+    /* ── EDITOR AREA ── */
+    .editor-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Title input */
+    .title-row {
+      padding: 1rem 1.5rem 0.5rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--deep);
+      flex-shrink: 0;
+    }
+    #postTitle {
+      width: 100%;
+      background: none;
+      border: none;
+      outline: none;
+      font-family: var(--font-disp);
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.05em;
+      caret-color: var(--green);
+    }
+    #postTitle::placeholder { color: var(--text-muted); }
+
+    /* Slug preview */
+    .slug-preview {
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      margin-top: 0.3rem;
+      letter-spacing: 0.05em;
+    }
+    .slug-preview span { color: var(--blue); }
+
+    /* The editor */
+    #editor {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem;
+      outline: none;
+      font-family: var(--font-ui);
+      font-size: 1rem;
+      line-height: 1.8;
+      color: var(--text);
+      caret-color: var(--green);
+    }
+    #editor:empty::before {
+      content: 'Start writing. Drag images here. Paste video links.';
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    /* Editor content styles */
+    #editor h1 { font-family: var(--font-disp); font-size: 1.6rem; color: #fff; margin: 1.5rem 0 0.75rem; letter-spacing: 0.04em; }
+    #editor h2 { font-family: var(--font-disp); font-size: 1.15rem; color: var(--green-dim); margin: 1.25rem 0 0.5rem; letter-spacing: 0.06em; }
+    #editor h3 { font-size: 1rem; font-weight: 600; color: var(--text); margin: 1rem 0 0.4rem; }
+    #editor p  { margin-bottom: 1rem; }
+    #editor b, #editor strong { color: #fff; }
+    #editor i, #editor em { color: var(--text-dim); }
+    #editor a  { color: var(--blue); text-decoration: underline; }
+    #editor blockquote {
+      border-left: 3px solid var(--green-dim);
+      margin: 1.5rem 0;
+      padding: 0.75rem 1rem;
+      background: var(--surface);
+      color: var(--text-dim);
+      font-style: italic;
+    }
+    #editor pre, #editor code {
+      font-family: var(--font-mono);
+      background: var(--black);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+    #editor pre {
+      padding: 1rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+      font-size: 0.85rem;
+      color: var(--green);
+      line-height: 1.6;
+    }
+    #editor code {
+      padding: 2px 5px;
+      font-size: 0.85em;
+      color: var(--amber);
+    }
+    #editor pre code { background: none; border: none; padding: 0; color: var(--green); }
+    #editor img {
+      max-width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      margin: 1rem 0;
+      display: block;
+    }
+    #editor .embed-wrap {
+      position: relative;
+      padding-bottom: 56.25%;
+      height: 0;
+      margin: 1.5rem 0;
+      background: var(--black);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    #editor .embed-wrap iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+      border: 0;
+    }
+    #editor .custom-html {
+      background: var(--black);
+      border: 1px solid var(--amber);
+      border-radius: 4px;
+      padding: 0.5rem 0.75rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--amber);
+      margin: 1rem 0;
+    }
+
+    /* Drag over */
+    #editor.drag-over {
+      outline: 2px dashed var(--green-dim);
+      outline-offset: -4px;
+    }
+
+    /* ── PREVIEW PANE ── */
+    .preview-pane {
+      display: none;
+      flex: 1;
+      overflow-y: auto;
+      padding: 2rem;
+      background: #fff;
+      color: #111;
+    }
+    .preview-pane.active { display: block; }
+
+    /* ── MODALS ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.25rem;
+      width: 420px;
+      max-width: 90vw;
+    }
+    .modal-title {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      color: var(--green);
+      margin-bottom: 1rem;
+    }
+    .modal input, .modal textarea {
+      width: 100%;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--font-ui);
+      font-size: 0.85rem;
+      padding: 0.5rem 0.6rem;
+      border-radius: 4px;
+      margin-bottom: 0.6rem;
+      outline: none;
+    }
+    .modal input:focus, .modal textarea:focus { border-color: var(--green-dim); }
+    .modal textarea { min-height: 100px; resize: vertical; font-family: var(--font-mono); font-size: 0.8rem; }
+    .modal-label { font-size: 0.7rem; color: var(--text-dim); margin-bottom: 0.25rem; display: block; }
+    .modal-btns { display: flex; gap: 0.5rem; margin-top: 0.5rem; justify-content: flex-end; }
+    .modal-btns button {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      padding: 0.4rem 0.8rem;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: 0.15s;
+    }
+    .modal-btns .btn-ok {
+      background: var(--green-dim);
+      color: var(--black);
+      border-color: var(--green-dim);
+    }
+    .modal-btns .btn-ok:hover { background: var(--green); }
+    .modal-btns button:hover { border-color: var(--text-dim); color: var(--text); }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      padding: 0.6rem 1rem;
+      border-radius: 4px;
+      z-index: 2000;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.ok  { border-color: var(--green-dim); color: var(--green-dim); }
+    .toast.err { border-color: var(--red); color: var(--red); }
+  </style>
+</head>
+<body>
+
+<!-- ═══ TOP BAR ═══ -->
+<div class="topbar">
+  <div class="topbar-logo">PUNKY <span>v0.1.0-alpha</span></div>
+  <div class="topbar-spacer"></div>
+  <div class="topbar-status" id="saveStatus">● UNSAVED</div>
+</div>
+
+<!-- ═══ TOOLBAR ═══ -->
+<div class="toolbar">
+
+  <!-- Text format -->
+  <div class="toolbar-group">
+    <button class="tb" title="Bold" onmousedown="event.preventDefault();fmt('bold')"><svg viewBox="0 0 24 24"><path d="M6 4h8a4 4 0 0 1 0 8H6z"/><path d="M6 12h9a4 4 0 0 1 0 8H6z"/></svg></button>
+    <button class="tb" title="Italic" onmousedown="event.preventDefault();fmt('italic')"><svg viewBox="0 0 24 24"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg></button>
+    <button class="tb" title="Underline" onmousedown="event.preventDefault();fmt('underline')"><svg viewBox="0 0 24 24"><path d="M6 3v7a6 6 0 0 0 12 0V3"/><line x1="4" y1="21" x2="20" y2="21"/></svg></button>
+    <button class="tb" title="Strikethrough" onmousedown="event.preventDefault();fmt('strikeThrough')"><svg viewBox="0 0 24 24"><path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><line x1="4" y1="12" x2="20" y2="12"/></svg></button>
+  </div>
+
+  <!-- Headings -->
+  <div class="toolbar-group">
+    <button class="tb tb-wide" title="Heading 1" onmousedown="event.preventDefault();insertHeading(1)">H1</button>
+    <button class="tb tb-wide" title="Heading 2" onmousedown="event.preventDefault();insertHeading(2)">H2</button>
+    <button class="tb tb-wide" title="Heading 3" onmousedown="event.preventDefault();insertHeading(3)">H3</button>
+  </div>
+
+  <!-- Structure -->
+  <div class="toolbar-group">
+    <button class="tb" title="Bullet list" onmousedown="event.preventDefault();fmt('insertUnorderedList')"><svg viewBox="0 0 24 24"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1" fill="currentColor" stroke="none"/></svg></button>
+    <button class="tb" title="Numbered list" onmousedown="event.preventDefault();fmt('insertOrderedList')"><svg viewBox="0 0 24 24"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg></button>
+    <button class="tb" title="Pull quote" onmousedown="event.preventDefault();insertQuote()"><svg viewBox="0 0 24 24"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg></button>
+    <button class="tb" title="Horizontal rule" onmousedown="event.preventDefault();fmt('insertHorizontalRule')"><svg viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/></svg></button>
+  </div>
+
+  <!-- Insert -->
+  <div class="toolbar-group">
+    <button class="tb" title="Link" onmousedown="event.preventDefault();openModal('link')"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
+    <button class="tb" title="Image (or drag & drop)" onmousedown="event.preventDefault();openModal('image')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
+    <button class="tb" title="Embed video (YouTube/Vimeo)" onmousedown="event.preventDefault();openModal('video')"><svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></button>
+    <button class="tb" title="Code block" onmousedown="event.preventDefault();insertCode()"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></button>
+    <button class="tb" title="Inline code" onmousedown="event.preventDefault();fmt('formatBlock', 'code')"><svg viewBox="0 0 24 24"><path d="M8 9l-3 3 3 3m8-6l3 3-3 3"/></svg></button>
+    <button class="tb" title="Custom HTML / Script" onmousedown="event.preventDefault();openModal('html')"><svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg></button>
+  </div>
+
+  <!-- View -->
+  <div class="toolbar-group">
+    <button class="tb tb-wide" title="Toggle preview" id="previewBtn" onmousedown="event.preventDefault();togglePreview()">PREVIEW</button>
+    <button class="tb tb-wide" title="Export HTML file" onmousedown="event.preventDefault();exportHTML()">EXPORT</button>
+  </div>
+
+</div>
+
+<!-- ═══ MAIN ═══ -->
+<div class="main">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <!-- Post meta -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Post Settings</div>
+
+      <label class="sidebar-field-label">Slug (URL)</label>
+      <input type="text" id="postSlug" placeholder="my-post-slug">
+
+      <label class="sidebar-field-label">Excerpt</label>
+      <textarea id="postExcerpt" placeholder="Short description for the index page…" rows="3"></textarea>
+
+      <label class="sidebar-field-label">Category</label>
+      <select id="postCategory">
+        <option value="tech">Tech</option>
+        <option value="ai">AI</option>
+        <option value="hardware">Hardware</option>
+        <option value="software">Software Development</option>
+        <option value="privacy">Privacy</option>
+        <option value="culture">Pop Culture</option>
+        <option value="politics">Politics</option>
+        <option value="philosophy">Philosophy</option>
+        <option value="music">Music</option>
+        <option value="opinion">Opinion</option>
+        <option value="project">Project Update</option>
+      </select>
+
+      <label class="sidebar-field-label">Tags</label>
+      <div class="tags-wrap" id="tagsWrap"></div>
+      <input type="text" id="tagInput" placeholder="Add tag + Enter">
+    </div>
+
+    <!-- GitHub -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">GitHub Publish</div>
+      <label class="sidebar-field-label">Personal Access Token</label>
+      <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off">
+      <label class="sidebar-field-label">Repo (owner/repo)</label>
+      <input type="text" id="ghRepo" placeholder="FluidFortune/blog">
+      <label class="sidebar-field-label">Branch</label>
+      <input type="text" id="ghBranch" placeholder="main" value="main">
+      <label class="sidebar-field-label">Posts folder</label>
+      <input type="text" id="ghFolder" placeholder="posts">
+      <div class="gh-status" id="ghStatus">Not connected</div>
+      <button class="btn-sec" onclick="testConnection()">TEST CONNECTION</button>
+      <button class="btn-pub" id="publishBtn" onclick="publishToGitHub()">PUBLISH TO GITHUB →</button>
+    </div>
+
+    <!-- Load existing post -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Edit Existing Post</div>
+      <div class="gh-status" id="loadStatus">Fetch your post list to edit</div>
+      <button class="btn-sec" id="fetchPostsBtn" onclick="fetchPostList()">FETCH POST LIST</button>
+      <div id="postPickerWrap" style="display:none">
+        <label class="sidebar-field-label" style="margin-top:.5rem">Select post</label>
+        <select id="postPicker" style="margin-bottom:.4rem">
+          <option value="">— choose a post —</option>
+        </select>
+        <button class="btn-sec" id="loadPostBtn" onclick="loadExistingPost()">LOAD INTO EDITOR</button>
+      </div>
+    </div>
+
+    <!-- Local save -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Local</div>
+      <button class="btn-sec" onclick="saveDraft()">SAVE DRAFT (LOCAL)</button>
+      <button class="btn-sec" onclick="loadDraft()">LOAD DRAFT</button>
+      <button class="btn-sec" onclick="exportHTML()">EXPORT HTML FILE</button>
+    </div>
+
+  </aside>
+
+  <!-- EDITOR -->
+  <div class="editor-wrap" id="editorWrap">
+    <div class="title-row">
+      <input type="text" id="postTitle" placeholder="Post title…" oninput="onTitleChange()">
+      <div class="slug-preview">blog.fluidfortune.com/posts/<span id="slugDisplay">your-post-slug</span>.html</div>
+    </div>
+    <div id="editor"
+      contenteditable="true"
+      spellcheck="true"
+      ondragover="onDragOver(event)"
+      ondragleave="onDragLeave(event)"
+      ondrop="onDrop(event)"
+      oninput="onEditorChange()">
+    </div>
+  </div>
+
+  <!-- PREVIEW (hidden by default) -->
+  <div class="preview-pane" id="previewPane"></div>
+
+</div>
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- Link -->
+<div class="modal-overlay" id="modal-link">
+  <div class="modal">
+    <div class="modal-title">[ INSERT LINK ]</div>
+    <label class="modal-label">Display text</label>
+    <input type="text" id="link-text" placeholder="Link text">
+    <label class="modal-label">URL</label>
+    <input type="url" id="link-url" placeholder="https://…">
+    <div class="modal-btns">
+      <button onclick="closeModal('link')">CANCEL</button>
+      <button class="btn-ok" onclick="insertLink()">INSERT</button>
+    </div>
+  </div>
+</div>
+
+<!-- Image -->
+<div class="modal-overlay" id="modal-image">
+  <div class="modal">
+    <div class="modal-title">[ INSERT IMAGE ]</div>
+    <label class="modal-label">Image URL (or drag & drop onto editor)</label>
+    <input type="url" id="image-url" placeholder="https://… or leave blank to upload">
+    <label class="modal-label">Alt text</label>
+    <input type="text" id="image-alt" placeholder="Describe the image">
+    <input type="file" id="image-file" accept="image/*" style="display:none" onchange="handleImageFile(event)">
+    <button class="btn-sec" onclick="document.getElementById('image-file').click()" style="margin-bottom:.5rem">CHOOSE FILE</button>
+    <div class="modal-btns">
+      <button onclick="closeModal('image')">CANCEL</button>
+      <button class="btn-ok" onclick="insertImage()">INSERT</button>
+    </div>
+  </div>
+</div>
+
+<!-- Video -->
+<div class="modal-overlay" id="modal-video">
+  <div class="modal">
+    <div class="modal-title">[ EMBED VIDEO ]</div>
+    <label class="modal-label">YouTube or Vimeo URL</label>
+    <input type="url" id="video-url" placeholder="https://www.youtube.com/watch?v=…">
+    <div class="modal-btns">
+      <button onclick="closeModal('video')">CANCEL</button>
+      <button class="btn-ok" onclick="insertVideo()">EMBED</button>
+    </div>
+  </div>
+</div>
+
+<!-- Custom HTML -->
+<div class="modal-overlay" id="modal-html">
+  <div class="modal">
+    <div class="modal-title">[ CUSTOM HTML / SCRIPT ]</div>
+    <label class="modal-label">Paste raw HTML or &lt;script&gt; tag</label>
+    <textarea id="html-code" placeholder="<script>…</script>&#10;<div>…</div>"></textarea>
+    <div class="modal-btns">
+      <button onclick="closeModal('html')">CANCEL</button>
+      <button class="btn-ok" onclick="insertCustomHTML()">INSERT</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────
+let isDirty = false;
+let tags = [];
+let savedRange = null;
+
+// ── SAVE SELECTION (before modal opens) ───────────────
+function saveSelection() {
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount > 0) savedRange = sel.getRangeAt(0).cloneRange();
+}
+function restoreSelection() {
+  if (!savedRange) return;
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(savedRange);
+}
+
+// ── EDITOR FOCUS ──────────────────────────────────────
+document.getElementById('editor').addEventListener('keydown', e => {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    document.execCommand('insertText', false, '    ');
+  }
+});
+
+// ── FORMAT ────────────────────────────────────────────
+function fmt(cmd, val) {
+  document.getElementById('editor').focus();
+  document.execCommand(cmd, false, val || null);
+}
+
+function insertHeading(level) {
+  document.getElementById('editor').focus();
+  document.execCommand('formatBlock', false, `h${level}`);
+}
+
+function insertQuote() {
+  document.getElementById('editor').focus();
+  document.execCommand('formatBlock', false, 'blockquote');
+}
+
+function insertCode() {
+  const editor = document.getElementById('editor');
+  editor.focus();
+  const pre = document.createElement('pre');
+  const code = document.createElement('code');
+  code.textContent = '// your code here';
+  pre.appendChild(code);
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount) {
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(pre);
+    range.setStartAfter(pre);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  } else {
+    editor.appendChild(pre);
+  }
+  onEditorChange();
+}
+
+// ── TITLE → SLUG ──────────────────────────────────────
+function onTitleChange() {
+  const title = document.getElementById('postTitle').value;
+  const slug = title.toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-');
+  document.getElementById('slugDisplay').textContent = slug || 'your-post-slug';
+  const slugInput = document.getElementById('postSlug');
+  if (!slugInput._manual) slugInput.value = slug;
+  onEditorChange();
+}
+
+document.getElementById('postSlug').addEventListener('input', function() {
+  this._manual = true;
+  document.getElementById('slugDisplay').textContent = this.value || 'your-post-slug';
+});
+
+// ── DIRTY STATE ───────────────────────────────────────
+function onEditorChange() {
+  if (!isDirty) {
+    isDirty = true;
+    const s = document.getElementById('saveStatus');
+    s.textContent = '● UNSAVED';
+    s.className = 'topbar-status unsaved';
+  }
+}
+
+// ── TAGS ──────────────────────────────────────────────
+document.getElementById('tagInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const val = e.target.value.trim();
+    if (val && !tags.includes(val)) {
+      tags.push(val);
+      renderTags();
+    }
+    e.target.value = '';
+  }
+});
+
+function renderTags() {
+  const wrap = document.getElementById('tagsWrap');
+  wrap.innerHTML = tags.map((t, i) =>
+    `<span class="tag" onclick="removeTag(${i})" title="Click to remove">${t} ×</span>`
+  ).join('');
+}
+
+function removeTag(i) {
+  tags.splice(i, 1);
+  renderTags();
+}
+
+// ── MODALS ────────────────────────────────────────────
+function openModal(name) {
+  saveSelection();
+  document.getElementById(`modal-${name}`).classList.add('active');
+}
+function closeModal(name) {
+  document.getElementById(`modal-${name}`).classList.remove('active');
+}
+
+// Close on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('active');
+  });
+});
+
+// ── LINK ──────────────────────────────────────────────
+function insertLink() {
+  const text = document.getElementById('link-text').value;
+  const url  = document.getElementById('link-url').value;
+  if (!url) return;
+  restoreSelection();
+  document.getElementById('editor').focus();
+  const a = `<a href="${url}" target="_blank" rel="noopener">${text || url}</a>`;
+  document.execCommand('insertHTML', false, a);
+  closeModal('link');
+  document.getElementById('link-text').value = '';
+  document.getElementById('link-url').value = '';
+  onEditorChange();
+}
+
+// ── IMAGE ─────────────────────────────────────────────
+function insertImage() {
+  const url = document.getElementById('image-url').value;
+  const alt = document.getElementById('image-alt').value || '';
+  if (!url) return;
+  restoreSelection();
+  document.getElementById('editor').focus();
+  document.execCommand('insertHTML', false, `<img src="${url}" alt="${alt}">`);
+  closeModal('image');
+  document.getElementById('image-url').value = '';
+  document.getElementById('image-alt').value = '';
+  onEditorChange();
+}
+
+function handleImageFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    document.getElementById('image-url').value = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── DRAG & DROP IMAGES ────────────────────────────────
+function onDragOver(e) {
+  e.preventDefault();
+  document.getElementById('editor').classList.add('drag-over');
+}
+function onDragLeave() {
+  document.getElementById('editor').classList.remove('drag-over');
+}
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('editor').classList.remove('drag-over');
+  const files = e.dataTransfer.files;
+  if (files.length) {
+    Array.from(files).forEach(file => {
+      if (!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        document.getElementById('editor').focus();
+        document.execCommand('insertHTML', false, `<img src="${ev.target.result}" alt="${file.name}">`);
+        onEditorChange();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+}
+
+// ── VIDEO EMBED ───────────────────────────────────────
+function insertVideo() {
+  const url = document.getElementById('video-url').value.trim();
+  if (!url) return;
+
+  let embedId = '';
+  let embedSrc = '';
+
+  const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  const vmMatch = url.match(/vimeo\.com\/(\d+)/);
+
+  if (ytMatch) {
+    embedSrc = `https://www.youtube.com/embed/${ytMatch[1]}`;
+  } else if (vmMatch) {
+    embedSrc = `https://player.vimeo.com/video/${vmMatch[1]}`;
+  } else {
+    toast('Could not parse video URL', 'err');
+    return;
+  }
+
+  const html = `<div class="embed-wrap"><iframe src="${embedSrc}" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe></div>`;
+  restoreSelection();
+  document.getElementById('editor').focus();
+  document.execCommand('insertHTML', false, html);
+  closeModal('video');
+  document.getElementById('video-url').value = '';
+  onEditorChange();
+}
+
+// ── CUSTOM HTML ───────────────────────────────────────
+function insertCustomHTML() {
+  const code = document.getElementById('html-code').value.trim();
+  if (!code) return;
+  // Store as a labelled block (not executed in editor, safe in export)
+  const display = document.createElement('div');
+  display.className = 'custom-html';
+  display.setAttribute('data-raw-html', encodeURIComponent(code));
+  display.textContent = `[ CUSTOM HTML: ${code.substring(0, 60)}${code.length > 60 ? '…' : ''} ]`;
+  restoreSelection();
+  const editor = document.getElementById('editor');
+  editor.focus();
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount) {
+    const range = sel.getRangeAt(0);
+    range.insertNode(display);
+    range.setStartAfter(display);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  } else {
+    editor.appendChild(display);
+  }
+  closeModal('html');
+  document.getElementById('html-code').value = '';
+  onEditorChange();
+}
+
+// ── PREVIEW ───────────────────────────────────────────
+function togglePreview() {
+  const pane = document.getElementById('previewPane');
+  const wrap = document.getElementById('editorWrap');
+  const btn  = document.getElementById('previewBtn');
+  const active = pane.classList.toggle('active');
+  wrap.style.display = active ? 'none' : 'flex';
+  btn.textContent = active ? 'EDITOR' : 'PREVIEW';
+  if (active) pane.innerHTML = buildOutputHTML(true);
+}
+
+// ── BUILD OUTPUT HTML ─────────────────────────────────
+function buildOutputHTML(previewOnly = false, createdISO = null, modifiedISO = null) {
+  const title    = document.getElementById('postTitle').value || 'Untitled';
+  const slug     = document.getElementById('postSlug').value || 'untitled';
+  const excerpt  = document.getElementById('postExcerpt').value || '';
+  const category = document.getElementById('postCategory').value;
+  const now      = new Date();
+  const created  = createdISO  ? new Date(createdISO)  : now;
+  const modified = modifiedISO ? new Date(modifiedISO) : now;
+  const isEdited = createdISO && modifiedISO && createdISO !== modifiedISO;
+
+  const fmtDate = d => d.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+  const fmtFull = d => d.toLocaleString('en-US', { year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' });
+
+  const dateDisplay  = fmtDate(created);
+  const editedNote   = isEdited ? `Last edited ${fmtFull(modified)}` : '';
+
+  // Resolve custom HTML blocks
+  let body = document.getElementById('editor').innerHTML;
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = body;
+  tempDiv.querySelectorAll('.custom-html').forEach(el => {
+    const raw = decodeURIComponent(el.getAttribute('data-raw-html') || '');
+    el.outerHTML = raw;
+  });
+  body = tempDiv.innerHTML;
+
+  if (previewOnly) {
+    return `
+      <style>
+        body { font-family: 'Inter', sans-serif; color: #111; max-width: 700px; margin: 0 auto; padding: 2rem; }
+        h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+        h2 { font-size: 1.3rem; margin: 1.5rem 0 0.5rem; }
+        p  { line-height: 1.8; margin-bottom: 1rem; }
+        blockquote { border-left: 3px solid #00c032; padding: 0.75rem 1rem; background: #f5f5f5; font-style: italic; margin: 1.5rem 0; }
+        pre { background: #1a1a1a; color: #00ff41; padding: 1rem; border-radius: 4px; overflow-x: auto; }
+        code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 0.85em; }
+        pre code { background: none; color: inherit; }
+        img { max-width: 100%; border-radius: 4px; margin: 1rem 0; }
+        .embed-wrap { position: relative; padding-bottom: 56.25%; height: 0; margin: 1.5rem 0; }
+        .embed-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+        .meta { color: #888; font-size: 0.8rem; margin-bottom: 2rem; }
+        .edited { color: #aaa; font-size: 0.72rem; margin-top: 0.25rem; }
+      </style>
+      <h1>${title}</h1>
+      <p class="meta">${dateDisplay} · ${category} · ${tags.join(', ')}</p>
+      ${editedNote ? `<p class="edited">${editedNote}</p>` : ''}
+      ${body}
+    `;
+  }
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title} | Fluid Fortune</title>
+  <meta name="description" content="${excerpt}">
+  <link rel="canonical" href="https://blog.fluidfortune.com/posts/${slug}.html">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://blog.fluidfortune.com/posts/${slug}.html">
+  <meta property="og:title" content="${title}">
+  <meta property="og:description" content="${excerpt}">
+  <meta property="og:site_name" content="Fluid Fortune">
+  <meta property="article:published_time" content="${created.toISOString()}">
+  <meta property="article:modified_time" content="${modified.toISOString()}">
+  <meta property="article:tag" content="${tags.join(',')}">
+  <meta property="article:section" content="${category}">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "${title.replace(/"/g, '\')}",
+    "description": "${excerpt.replace(/"/g, '\')}",
+    "url": "https://blog.fluidfortune.com/posts/${slug}.html",
+    "datePublished": "${created.toISOString()}",
+    "dateModified": "${modified.toISOString()}",
+    "author": {
+      "@type": "Organization",
+      "name": "Fluid Fortune",
+      "url": "https://fluidfortune.com"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Fluid Fortune",
+      "url": "https://fluidfortune.com"
+    },
+    "keywords": "${tags.join(', ')}",
+    "articleSection": "${category}",
+    "inLanguage": "en-US",
+    "isPartOf": {
+      "@type": "Blog",
+      "name": "Fluid Fortune Blog",
+      "url": "https://blog.fluidfortune.com"
+    }
+  }
+  <\/script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&family=Inter:wght@400;500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&family=Inter:wght@400;500&display=swap"></noscript>
+  <style>
+    :root {
+      --black:#050a05;--deep:#0d1117;--surface:#161b22;--border:#30363d;
+      --green:#00ff41;--green-dim:#00c032;--green-mute:#1a3a1a;
+      --amber:#ffb700;--blue:#58a6ff;--red:#f85149;
+      --text:#e6edf3;--text-dim:#8b949e;--text-muted:#484f58;
+      --font-mono:'Share Tech Mono',monospace;
+      --font-ui:'Inter',sans-serif;
+      --font-disp:'Orbitron',monospace;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--deep);color:var(--text);font-family:var(--font-ui);line-height:1.8;font-size:1rem}
+    nav{background:var(--black);border-bottom:1px solid var(--border);padding:.75rem 1.5rem;display:flex;align-items:center;gap:1rem}
+    nav a{font-family:var(--font-disp);font-size:.8rem;color:var(--green);text-decoration:none;letter-spacing:.12em}
+    nav .back{color:var(--text-dim);font-family:var(--font-mono);font-size:.72rem}
+    nav .back:hover{color:var(--green)}
+    .post{max-width:740px;margin:0 auto;padding:3rem 1.5rem}
+    .post-meta{font-family:var(--font-mono);font-size:.65rem;color:var(--text-muted);letter-spacing:.1em;margin-bottom:.5rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+    .post-meta .cat{color:var(--green-dim);border:1px solid var(--green-mute);padding:.1rem .5rem}
+    .post-meta .tag-pill{color:var(--text-muted);border:1px solid var(--border);padding:.1rem .5rem}
+    .post-edited{font-family:var(--font-mono);font-size:.58rem;color:var(--text-muted);margin-bottom:1.5rem;font-style:italic}
+    h1.post-title{font-family:var(--font-disp);font-size:clamp(1.4rem,4vw,2rem);color:#fff;margin-bottom:1rem;letter-spacing:.04em;font-weight:900}
+    .post-body h1{font-family:var(--font-disp);font-size:1.5rem;color:#fff;margin:2rem 0 .75rem;letter-spacing:.04em}
+    .post-body h2{font-family:var(--font-disp);font-size:1.1rem;color:var(--green-dim);margin:1.5rem 0 .5rem;letter-spacing:.06em}
+    .post-body h3{font-size:1rem;font-weight:600;color:var(--text);margin:1.2rem 0 .4rem}
+    .post-body p{margin-bottom:1rem}
+    .post-body b,.post-body strong{color:#fff}
+    .post-body i,.post-body em{color:var(--text-dim)}
+    .post-body a{color:var(--blue);text-decoration:underline}
+    .post-body blockquote{border-left:3px solid var(--green-dim);margin:1.5rem 0;padding:.75rem 1rem;background:var(--surface);color:var(--text-dim);font-style:italic}
+    .post-body pre{background:var(--black);border:1px solid var(--border);border-radius:4px;padding:1rem;overflow-x:auto;margin:1rem 0;font-size:.85rem;color:var(--green);font-family:var(--font-mono);line-height:1.6}
+    .post-body code{font-family:var(--font-mono);background:var(--black);border:1px solid var(--border);border-radius:3px;padding:2px 5px;font-size:.85em;color:var(--amber)}
+    .post-body pre code{background:none;border:none;padding:0;color:var(--green)}
+    .post-body img{max-width:100%;border:1px solid var(--border);border-radius:4px;margin:1rem 0;display:block}
+    .post-body ul,.post-body ol{padding-left:1.5rem;margin-bottom:1rem}
+    .post-body li{margin-bottom:.3rem}
+    .embed-wrap{position:relative;padding-bottom:56.25%;height:0;margin:1.5rem 0;background:var(--black);border:1px solid var(--border);border-radius:4px;overflow:hidden}
+    .embed-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+    footer{border-top:1px solid var(--border);margin-top:4rem;padding:2rem 1.5rem;text-align:center;font-family:var(--font-mono);font-size:.65rem;color:var(--text-muted)}
+    footer a{color:var(--green-dim)}
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="https://fluidfortune.com">FLUID FORTUNE</a>
+    <a href="https://blog.fluidfortune.com" class="back">← BLOG</a>
+  </nav>
+  <article class="post">
+    <div class="post-meta">
+      <span>${dateDisplay}</span>
+      <span class="cat">${category.toUpperCase()}</span>
+      ${tags.map(t => `<span class="tag-pill">${t}</span>`).join('')}
+    </div>
+    ${editedNote ? `<div class="post-edited">${editedNote}</div>` : ''}
+    <h1 class="post-title">${title}</h1>
+    <div class="post-body">${body}</div>
+  </article>
+  <footer>
+    <p><a href="https://fluidfortune.com">FLUID FORTUNE</a> &nbsp;|&nbsp; LOCAL INTELLIGENCE</p>
+  </footer>
+</body>
+</html>`;
+}
+
+// ── EXPORT HTML ───────────────────────────────────────
+function exportHTML() {
+  const slug = document.getElementById('postSlug').value || 'untitled';
+  const html = buildOutputHTML();
+  const blob = new Blob([html], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${slug}.html`;
+  a.click();
+  markSaved();
+  toast('Exported: ' + slug + '.html', 'ok');
+}
+
+// ── LOCAL DRAFT ───────────────────────────────────────
+function saveDraft() {
+  const draft = {
+    title:    document.getElementById('postTitle').value,
+    slug:     document.getElementById('postSlug').value,
+    excerpt:  document.getElementById('postExcerpt').value,
+    category: document.getElementById('postCategory').value,
+    tags,
+    body:     document.getElementById('editor').innerHTML,
+    saved:    Date.now()
+  };
+  localStorage.setItem('punky_draft', JSON.stringify(draft));
+  markSaved();
+  toast('Draft saved locally', 'ok');
+}
+
+function loadDraft() {
+  const raw = localStorage.getItem('punky_draft');
+  if (!raw) { toast('No draft found', 'err'); return; }
+  const d = JSON.parse(raw);
+  document.getElementById('postTitle').value    = d.title    || '';
+  document.getElementById('postSlug').value     = d.slug     || '';
+  document.getElementById('postExcerpt').value  = d.excerpt  || '';
+  document.getElementById('postCategory').value = d.category || 'tech';
+  document.getElementById('editor').innerHTML   = d.body     || '';
+  document.getElementById('slugDisplay').textContent = d.slug || 'your-post-slug';
+  tags = d.tags || [];
+  renderTags();
+  markSaved();
+  toast('Draft loaded', 'ok');
+}
+
+// Auto-save draft every 60s
+setInterval(saveDraft, 60000);
+
+// ── LOAD EXISTING POST ────────────────────────────────
+async function fetchPostList() {
+  const { token, repo, branch } = getGHConfig();
+  if (!token || !repo) { toast('Configure GitHub settings first', 'err'); return; }
+
+  const btn    = document.getElementById('fetchPostsBtn');
+  const status = document.getElementById('loadStatus');
+  btn.textContent = 'FETCHING…';
+  status.textContent = 'Loading post list…';
+  status.className = 'gh-status';
+
+  try {
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/vnd.github+json'
+    };
+    const res = await fetch(
+      `https://api.github.com/repos/${repo}/contents/index.json`, { headers }
+    );
+    if (!res.ok) throw new Error('Could not fetch index.json — have you published any posts yet?');
+
+    const data     = await res.json();
+    const manifest = JSON.parse(atob(data.content.replace(/\n/g, '')));
+    const posts    = manifest.posts || [];
+
+    if (posts.length === 0) {
+      status.textContent = 'No posts found in this repo.';
+      status.className = 'gh-status err';
+      return;
+    }
+
+    // Populate picker
+    const picker = document.getElementById('postPicker');
+    picker.innerHTML = '<option value="">— choose a post —</option>';
+    posts.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = JSON.stringify(p);
+      opt.textContent = `${p.title} (${new Date(p.created).toLocaleDateString()})`;
+      picker.appendChild(opt);
+    });
+
+    document.getElementById('postPickerWrap').style.display = 'block';
+    status.textContent = `✓ ${posts.length} post${posts.length !== 1 ? 's' : ''} found`;
+    status.className = 'gh-status ok';
+
+  } catch (e) {
+    status.textContent = `✗ ${e.message}`;
+    status.className = 'gh-status err';
+    toast('Fetch failed', 'err');
+  } finally {
+    btn.textContent = 'FETCH POST LIST';
+  }
+}
+
+async function loadExistingPost() {
+  const picker = document.getElementById('postPicker');
+  if (!picker.value) { toast('Select a post first', 'err'); return; }
+
+  const meta    = JSON.parse(picker.value);
+  const { token, repo } = getGHConfig();
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: 'application/vnd.github+json'
+  };
+
+  const btn    = document.getElementById('loadPostBtn');
+  const status = document.getElementById('loadStatus');
+  btn.textContent = 'LOADING…';
+
+  try {
+    // Fetch the actual post HTML file
+    const res = await fetch(
+      `https://api.github.com/repos/${repo}/contents/${meta.url}`, { headers }
+    );
+    if (!res.ok) throw new Error('Could not fetch post file');
+
+    const data    = await res.json();
+    const html    = atob(data.content.replace(/\n/g, ''));
+
+    // Extract just the post body from between .post-body tags
+    const bodyMatch = html.match(/<div class="post-body">([\s\S]*?)<\/div>\s*<\/article>/);
+    const body = bodyMatch ? bodyMatch[1].trim() : '';
+
+    // Load metadata into sidebar fields
+    document.getElementById('postTitle').value    = meta.title    || '';
+    document.getElementById('postSlug').value     = meta.slug     || '';
+    document.getElementById('postSlug')._manual   = true;
+    document.getElementById('postExcerpt').value  = meta.excerpt  || '';
+    document.getElementById('slugDisplay').textContent = meta.slug || 'your-post-slug';
+
+    if (meta.category) {
+      const cat = document.getElementById('postCategory');
+      const opt = Array.from(cat.options).find(o => o.value === meta.category);
+      if (opt) cat.value = meta.category;
+    }
+
+    // Load tags
+    tags = meta.tags || [];
+    renderTags();
+
+    // Load body into editor
+    document.getElementById('editor').innerHTML = body;
+
+    // Store original created date so publish preserves it
+    document.getElementById('editor').dataset.createdISO = meta.created || '';
+
+    status.textContent = `✓ Loaded: ${meta.title}`;
+    status.className = 'gh-status ok';
+    toast('Post loaded — edit and republish', 'ok');
+    isDirty = true;
+
+  } catch (e) {
+    status.textContent = `✗ ${e.message}`;
+    status.className = 'gh-status err';
+    toast('Load failed', 'err');
+  } finally {
+    btn.textContent = 'LOAD INTO EDITOR';
+  }
+}
+
+// ── GITHUB ────────────────────────────────────────────
+function getGHConfig() {
+  return {
+    token:  document.getElementById('ghToken').value.trim(),
+    repo:   document.getElementById('ghRepo').value.trim(),
+    branch: document.getElementById('ghBranch').value.trim() || 'main',
+    folder: document.getElementById('ghFolder').value.trim() || 'posts'
+  };
+}
+
+async function testConnection() {
+  const { token, repo } = getGHConfig();
+  if (!token || !repo) { toast('Enter token and repo first', 'err'); return; }
+  const status = document.getElementById('ghStatus');
+  status.textContent = 'Connecting…';
+  status.className = 'gh-status';
+  try {
+    const res = await fetch(`https://api.github.com/repos/${repo}`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' }
+    });
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    status.textContent = `✓ Connected: ${data.full_name}`;
+    status.className = 'gh-status ok';
+    toast('GitHub connected', 'ok');
+  } catch (e) {
+    status.textContent = `✗ Failed: ${e.message}`;
+    status.className = 'gh-status err';
+    toast('Connection failed', 'err');
+  }
+}
+
+async function publishToGitHub() {
+  const { token, repo, branch, folder } = getGHConfig();
+  const slug     = document.getElementById('postSlug').value || 'untitled';
+  const title    = document.getElementById('postTitle').value || 'Untitled';
+  const excerpt  = document.getElementById('postExcerpt').value || '';
+  const category = document.getElementById('postCategory').value;
+
+  if (!token || !repo) { toast('Configure GitHub settings first', 'err'); return; }
+  if (!slug || slug === 'untitled') { toast('Set a post slug first', 'err'); return; }
+
+  const btn = document.getElementById('publishBtn');
+  btn.textContent = 'PUBLISHING…';
+  btn.disabled = true;
+
+  const nowISO  = new Date().toISOString();
+  const path    = `${folder}/${slug}.html`;
+  const apiURL  = `https://api.github.com/repos/${repo}/contents/${path}`;
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: 'application/vnd.github+json',
+    'Content-Type': 'application/json'
+  };
+
+  try {
+    // ── 1. Check if post exists (get SHA + original created date) ──
+    let sha         = null;
+    // Use created date from loaded post if available, otherwise check manifest
+    let createdDate = document.getElementById('editor').dataset.createdISO || nowISO;
+
+    const check = await fetch(apiURL, { headers });
+    if (check.ok) {
+      const existing = await check.json();
+      sha = existing.sha;
+      // Try to recover original created date from manifest
+      const mCheck = await fetch(
+        `https://api.github.com/repos/${repo}/contents/index.json`, { headers }
+      );
+      if (mCheck.ok) {
+        const mData    = await mCheck.json();
+        const manifest = JSON.parse(atob(mData.content.replace(/\n/g,'')));
+        const existing = manifest.posts.find(p => p.slug === slug);
+        if (existing && existing.created) createdDate = existing.created;
+      }
+    }
+
+    // ── 2. Build & push the post HTML ──
+    const html    = buildOutputHTML(false, createdDate, nowISO);
+    const content = btoa(unescape(encodeURIComponent(html)));
+
+    const postBody = {
+      message: `${sha ? 'Update' : 'Publish'} post: ${title}`,
+      content, branch
+    };
+    if (sha) postBody.sha = sha;
+
+    const res = await fetch(apiURL, {
+      method: 'PUT', headers, body: JSON.stringify(postBody)
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.message || res.status); }
+
+    // ── 3. Update index.json manifest ──
+    await updateManifest({ token, repo, branch, folder, headers,
+      slug, title, excerpt, category, createdDate, modifiedDate: nowISO });
+
+    markSaved();
+    const action = sha ? 'Updated' : 'Published';
+    toast(`${action} ✓`, 'ok');
+    document.getElementById('ghStatus').textContent = `✓ ${action}: ${path}`;
+    document.getElementById('ghStatus').className = 'gh-status ok';
+
+  } catch (e) {
+    toast('Publish failed: ' + e.message, 'err');
+    document.getElementById('ghStatus').textContent = `✗ ${e.message}`;
+    document.getElementById('ghStatus').className = 'gh-status err';
+  } finally {
+    btn.textContent = 'PUBLISH TO GITHUB →';
+    btn.disabled = false;
+  }
+}
+
+async function updateManifest({ token, repo, branch, folder, headers,
+  slug, title, excerpt, category, createdDate, modifiedDate }) {
+
+  const manifestURL = `https://api.github.com/repos/${repo}/contents/index.json`;
+  let manifest = { posts: [] };
+  let manifestSHA = null;
+
+  // Fetch existing manifest if it exists
+  const mRes = await fetch(manifestURL, { headers });
+  if (mRes.ok) {
+    const mData  = await mRes.json();
+    manifestSHA  = mData.sha;
+    manifest     = JSON.parse(atob(mData.content.replace(/\n/g,'')));
+  }
+
+  // Upsert this post's entry
+  const entry = {
+    slug, title, excerpt, category,
+    tags: [...tags],
+    created:  createdDate,
+    modified: modifiedDate,
+    url: `${folder}/${slug}.html`
+  };
+
+  const idx = manifest.posts.findIndex(p => p.slug === slug);
+  if (idx >= 0) manifest.posts[idx] = entry;
+  else manifest.posts.unshift(entry);
+
+  // Sort by created descending
+  manifest.posts.sort((a, b) => new Date(b.created) - new Date(a.created));
+
+  const mContent = btoa(unescape(encodeURIComponent(JSON.stringify(manifest, null, 2))));
+  const mBody    = { message: `Update index: ${title}`, content: mContent, branch };
+  if (manifestSHA) mBody.sha = manifestSHA;
+
+  const mPut = await fetch(manifestURL, {
+    method: 'PUT', headers, body: JSON.stringify(mBody)
+  });
+  if (!mPut.ok) { const e = await mPut.json(); throw new Error('Manifest: ' + (e.message || mPut.status)); }
+
+  // ── Generate sitemap.xml ──
+  await updateSitemap({ token, repo, branch, headers, posts: manifest.posts });
+}
+
+async function updateSitemap({ token, repo, branch, headers, posts }) {
+  const sitemapURL = `https://api.github.com/repos/${repo}/contents/sitemap.xml`;
+
+  const urls = posts.map(p => `
+  <url>
+    <loc>https://blog.fluidfortune.com/${p.url}</loc>
+    <lastmod>${new Date(p.modified || p.created).toISOString().split('T')[0]}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>${p === posts[0] ? '1.0' : '0.8'}</priority>
+  </url>`).join('');
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://blog.fluidfortune.com/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>${urls}
+</urlset>`;
+
+  // Get existing SHA if it exists
+  let smSHA = null;
+  const smCheck = await fetch(sitemapURL, { headers });
+  if (smCheck.ok) { const d = await smCheck.json(); smSHA = d.sha; }
+
+  const smBody = {
+    message: 'Update sitemap.xml',
+    content: btoa(unescape(encodeURIComponent(xml))),
+    branch
+  };
+  if (smSHA) smBody.sha = smSHA;
+
+  await fetch(sitemapURL, { method: 'PUT', headers, body: JSON.stringify(smBody) });
+  // Sitemap failure is non-fatal — don't throw
+}
+
+// ── PERSIST GH SETTINGS ──────────────────────────────
+['ghToken','ghRepo','ghBranch','ghFolder'].forEach(id => {
+  const el = document.getElementById(id);
+  const stored = localStorage.getItem('punky_' + id);
+  if (stored) el.value = stored;
+  el.addEventListener('input', () => localStorage.setItem('punky_' + id, el.value));
+});
+
+// ── HELPERS ───────────────────────────────────────────
+function markSaved() {
+  isDirty = false;
+  const s = document.getElementById('saveStatus');
+  s.textContent = '● SAVED';
+  s.className = 'topbar-status saved';
+}
+
+function toast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.className = 'toast', 2800);
+}
+
+// Warn on unload if dirty
+window.addEventListener('beforeunload', e => {
+  if (isDirty) { e.preventDefault(); e.returnValue = ''; }
+});
+</script>
+</body>
+</html>
