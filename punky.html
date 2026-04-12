@@ -516,18 +516,18 @@
 
   <!-- Insert -->
   <div class="toolbar-group">
-    <button class="tb" title="Link" onmousedown="event.preventDefault();openModal('link')"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
-    <button class="tb" title="Image (or drag & drop)" onmousedown="event.preventDefault();openModal('image')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
-    <button class="tb" title="Embed video (YouTube/Vimeo)" onmousedown="event.preventDefault();openModal('video')"><svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></button>
+    <button class="tb" title="Link" onclick="openModal('link')"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
+    <button class="tb" title="Image (or drag & drop)" onclick="openModal('image')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
+    <button class="tb" title="Embed video (YouTube/Vimeo)" onclick="openModal('video')"><svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></button>
     <button class="tb" title="Code block" onmousedown="event.preventDefault();insertCode()"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></button>
     <button class="tb" title="Inline code" onmousedown="event.preventDefault();fmt('formatBlock', 'code')"><svg viewBox="0 0 24 24"><path d="M8 9l-3 3 3 3m8-6l3 3-3 3"/></svg></button>
-    <button class="tb" title="Custom HTML / Script" onmousedown="event.preventDefault();openModal('html')"><svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg></button>
+    <button class="tb" title="Custom HTML / Script" onclick="openModal('html')"><svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg></button>
   </div>
 
   <!-- View -->
   <div class="toolbar-group">
-    <button class="tb tb-wide" title="Toggle preview" id="previewBtn" onmousedown="event.preventDefault();togglePreview()">PREVIEW</button>
-    <button class="tb tb-wide" title="Export HTML file" onmousedown="event.preventDefault();exportHTML()">EXPORT</button>
+    <button class="tb tb-wide" title="Toggle preview" id="previewBtn" onclick="togglePreview()">PREVIEW</button>
+    <button class="tb tb-wide" title="Export HTML file" onclick="exportHTML()">EXPORT</button>
   </div>
 
 </div>
@@ -1028,8 +1028,8 @@ function buildOutputHTML(previewOnly = false, createdISO = null, modifiedISO = n
   {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
-    "headline": "${title.replace(/"/g, '\')}",
-    "description": "${excerpt.replace(/"/g, '\')}",
+    "headline": "${title.replace(/["\']/g, ' ')}",
+    "description": "${excerpt.replace(/["\']/g, ' ')}",
     "url": "https://blog.fluidfortune.com/posts/${slug}.html",
     "datePublished": "${created.toISOString()}",
     "dateModified": "${modified.toISOString()}",
