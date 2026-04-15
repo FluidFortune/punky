@@ -654,6 +654,14 @@
     <input type="url" id="image-url" placeholder="https://… or leave blank to upload">
     <label class="modal-label">Alt text</label>
     <input type="text" id="image-alt" placeholder="Describe the image">
+    <label class="modal-label">Size</label>
+    <select id="image-size" style="margin-bottom:.6rem">
+      <option value="100%">Full width</option>
+      <option value="75%">Three quarter width</option>
+      <option value="50%">Half width</option>
+      <option value="25%">Quarter width</option>
+      <option value="auto">Original size</option>
+    </select>
     <input type="file" id="image-file" accept="image/*" style="display:none" onchange="handleImageFile(event)">
     <button class="btn-sec" onclick="document.getElementById('image-file').click()" style="margin-bottom:.5rem">CHOOSE FILE</button>
     <div class="modal-btns">
@@ -841,12 +849,16 @@ function insertLink() {
 
 // ── IMAGE ─────────────────────────────────────────────
 function insertImage() {
-  const url = document.getElementById('image-url').value;
-  const alt = document.getElementById('image-alt').value || '';
+  const url  = document.getElementById('image-url').value;
+  const alt  = document.getElementById('image-alt').value || '';
+  const size = document.getElementById('image-size').value;
   if (!url) return;
+  const style = size === 'auto'
+    ? 'display:block;margin:1rem auto;max-width:100%;height:auto;'
+    : `display:block;margin:1rem auto;max-width:${size};width:100%;height:auto;`;
   restoreSelection();
   document.getElementById('editor').focus();
-  document.execCommand('insertHTML', false, `<img src="${url}" alt="${alt}">`);
+  document.execCommand('insertHTML', false, `<img src="${url}" alt="${alt}" style="${style}">`);
   closeModal('image');
   document.getElementById('image-url').value = '';
   document.getElementById('image-alt').value = '';
@@ -881,7 +893,7 @@ function onDrop(e) {
       const reader = new FileReader();
       reader.onload = ev => {
         document.getElementById('editor').focus();
-        document.execCommand('insertHTML', false, `<img src="${ev.target.result}" alt="${file.name}">`);
+        document.execCommand('insertHTML', false, `<img src="${ev.target.result}" alt="${file.name}" style="display:block;margin:1rem auto;max-width:100%;height:auto;">`);
         onEditorChange();
       };
       reader.readAsDataURL(file);
@@ -1442,6 +1454,61 @@ async function updateManifest({ token, repo, branch, folder, headers,
 
   // ── Generate sitemap.xml ──
   await updateSitemap({ token, repo, branch, headers, posts: manifest.posts });
+
+  // ── Generate RSS feed ──
+  await updateRSSFeed({ token, repo, branch, headers, posts: manifest.posts });
+}
+
+async function updateRSSFeed({ token, repo, branch, headers, posts }) {
+  const feedURL = `https://api.github.com/repos/${repo}/contents/feed.xml`;
+
+  const items = posts.map(p => {
+    const pubDate = new Date(p.created).toUTCString();
+    const link    = `https://blog.fluidfortune.com/${p.url}`;
+    return `
+  <item>
+    <title><![CDATA[${p.title}]]></title>
+    <link>${link}</link>
+    <guid isPermaLink="true">${link}</guid>
+    <pubDate>${pubDate}</pubDate>
+    <description><![CDATA[${p.excerpt || p.title}]]></description>
+    <category>${p.category || 'tech'}</category>
+    ${(p.tags||[]).map(t => '<category>' + t + '</category>').join(' ')}
+  </item>`;
+  }).join('');
+
+  const feed = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+  xmlns:atom="http://www.w3.org/2005/Atom"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Fluid Fortune — Field Notes</title>
+    <link>https://blog.fluidfortune.com</link>
+    <description>Technical deep-dives, opinions, and dispatches from the forge. No SEO bait. No sponsored content. Just signal.</description>
+    <language>en-us</language>
+    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
+    <atom:link href="https://blog.fluidfortune.com/feed.xml" rel="self" type="application/rss+xml"/>
+    <image>
+      <url>https://fluidfortune.com/courtjester.jpg</url>
+      <title>Fluid Fortune — Field Notes</title>
+      <link>https://blog.fluidfortune.com</link>
+    </image>${items}
+  </channel>
+</rss>`;
+
+  let feedSHA = null;
+  const check = await fetch(feedURL, { headers });
+  if (check.ok) { const d = await check.json(); feedSHA = d.sha; }
+
+  const body = {
+    message: 'Update feed.xml',
+    content: btoa(unescape(encodeURIComponent(feed))),
+    branch
+  };
+  if (feedSHA) body.sha = feedSHA;
+
+  await fetch(feedURL, { method: 'PUT', headers, body: JSON.stringify(body) });
+  // RSS failure is non-fatal
 }
 
 async function updateSitemap({ token, repo, branch, headers, posts }) {
