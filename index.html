@@ -1454,6 +1454,61 @@ async function updateManifest({ token, repo, branch, folder, headers,
 
   // ── Generate sitemap.xml ──
   await updateSitemap({ token, repo, branch, headers, posts: manifest.posts });
+
+  // ── Generate RSS feed ──
+  await updateRSSFeed({ token, repo, branch, headers, posts: manifest.posts });
+}
+
+async function updateRSSFeed({ token, repo, branch, headers, posts }) {
+  const feedURL = `https://api.github.com/repos/${repo}/contents/feed.xml`;
+
+  const items = posts.map(p => {
+    const pubDate = new Date(p.created).toUTCString();
+    const link    = `https://blog.fluidfortune.com/${p.url}`;
+    return `
+  <item>
+    <title><![CDATA[${p.title}]]></title>
+    <link>${link}</link>
+    <guid isPermaLink="true">${link}</guid>
+    <pubDate>${pubDate}</pubDate>
+    <description><![CDATA[${p.excerpt || p.title}]]></description>
+    <category>${p.category || 'tech'}</category>
+    ${(p.tags||[]).map(t => '<category>' + t + '</category>').join(' ')}
+  </item>`;
+  }).join('');
+
+  const feed = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+  xmlns:atom="http://www.w3.org/2005/Atom"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Fluid Fortune — Field Notes</title>
+    <link>https://blog.fluidfortune.com</link>
+    <description>Technical deep-dives, opinions, and dispatches from the forge. No SEO bait. No sponsored content. Just signal.</description>
+    <language>en-us</language>
+    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
+    <atom:link href="https://blog.fluidfortune.com/feed.xml" rel="self" type="application/rss+xml"/>
+    <image>
+      <url>https://fluidfortune.com/courtjester.jpg</url>
+      <title>Fluid Fortune — Field Notes</title>
+      <link>https://blog.fluidfortune.com</link>
+    </image>${items}
+  </channel>
+</rss>`;
+
+  let feedSHA = null;
+  const check = await fetch(feedURL, { headers });
+  if (check.ok) { const d = await check.json(); feedSHA = d.sha; }
+
+  const body = {
+    message: 'Update feed.xml',
+    content: btoa(unescape(encodeURIComponent(feed))),
+    branch
+  };
+  if (feedSHA) body.sha = feedSHA;
+
+  await fetch(feedURL, { method: 'PUT', headers, body: JSON.stringify(body) });
+  // RSS failure is non-fatal
 }
 
 async function updateSitemap({ token, repo, branch, headers, posts }) {
