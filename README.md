@@ -181,6 +181,36 @@ MIT — do what you want with it. If you build something cool on top of it, a me
 
 ---
 
+## Utilities
+
+### `punky-rss-bootstrap.html`
+
+A one-time tool for generating `feed.xml` from an existing `index.json`. Use it when:
+
+- You have existing posts published before Punky's RSS support was added
+- You migrated from another editor and already have posts in `index.json`
+- Your `feed.xml` was accidentally deleted and needs to be regenerated
+- You manually edited `index.json` and want to rebuild the feed from scratch
+
+**How to use:** Upload to any GitHub Pages repo, open via `https://`, enter your token and blog repo, hit the button. It reads your `index.json`, builds the feed from all posts, and pushes `feed.xml` to your repo. Run it once and delete it — Punky maintains the feed automatically on every publish from that point forward.
+
+---
+
+## Utilities
+
+### `punky-rss-bootstrap.html`
+
+A one-time tool for generating `feed.xml` from an existing `index.json`. Use it when:
+
+- You have existing posts published before RSS support was added
+- You migrated from another editor and already have posts in `index.json`
+- Your `feed.xml` was accidentally deleted and needs to be rebuilt
+- You manually edited `index.json` and want to resync the feed
+
+**How to use:** Upload to any GitHub Pages repo, open via `https://`, enter your token and blog repo, hit the button. Punky maintains the feed automatically after that — the bootstrap is a one-time repair tool, not part of the regular workflow. You can delete it from your public repo after running it.
+
+---
+
 ## Contributing
 
-Issues and PRs welcome. The entire application is `punky.html`. Key sections are marked with `// ──` comment headers for navigation.
+Issues and PRs welcome. The entire application is `punky.html` and if you choose to use it with Github Pages as a root file just change it or create a copy called index.html for your personal use. Key sections are marked with `// ──` comment headers for navigation.
