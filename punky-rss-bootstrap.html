@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Punky RSS Bootstrap</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&display=swap"></noscript>
+  <style>
+    :root {
+      --black:#050a05;--deep:#0d1117;--surface:#161b22;--border:#30363d;
+      --green:#00ff41;--green-dim:#00c032;--green-mute:#1a3a1a;
+      --amber:#ffb700;--text:#e6edf3;--text-dim:#8b949e;--text-muted:#484f58;--red:#f85149;
+      --font-mono:'Share Tech Mono',monospace;--font-disp:'Orbitron',monospace;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--deep);color:var(--text);font-family:var(--font-mono);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem}
+    .card{background:var(--surface);border:1px solid var(--border);padding:2rem;width:100%;max-width:540px;position:relative}
+    .card::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px;background:var(--green-dim)}
+    h1{font-family:var(--font-disp);font-size:1rem;color:var(--green);letter-spacing:.15em;margin-bottom:.3rem}
+    .sub{font-size:.65rem;color:var(--text-muted);letter-spacing:.1em;margin-bottom:2rem}
+    label{font-size:.62rem;color:var(--text-dim);letter-spacing:.08em;display:block;margin-bottom:.25rem}
+    input{width:100%;background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--font-mono);font-size:.8rem;padding:.5rem .6rem;border-radius:3px;outline:none;margin-bottom:1rem;transition:border-color .15s}
+    input:focus{border-color:var(--green-dim)}
+    input[type=password]{letter-spacing:.1em}
+    .btn{width:100%;background:var(--green-dim);color:var(--black);border:none;font-family:var(--font-mono);font-size:.75rem;letter-spacing:.12em;padding:.6rem;cursor:pointer;border-radius:3px;transition:background .15s;margin-top:.5rem}
+    .btn:hover{background:var(--green)}
+    .btn:disabled{background:var(--text-muted);cursor:not-allowed}
+    .log{background:var(--black);border:1px solid var(--border);padding:1rem;margin-top:1.5rem;min-height:100px;font-size:.7rem;color:var(--text-dim);line-height:1.8;display:none}
+    .log.active{display:block}
+    .log .ok{color:var(--green-dim)}
+    .log .err{color:var(--red)}
+    .log .info{color:var(--amber)}
+    .note{font-size:.62rem;color:var(--text-muted);line-height:1.6;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)}
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>PUNKY RSS BOOTSTRAP</h1>
+  <div class="sub">ONE-TIME TOOL — generates feed.xml from your existing index.json</div>
+
+  <label>GitHub Personal Access Token</label>
+  <input type="password" id="token" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off">
+
+  <label>Blog Repo (owner/repo)</label>
+  <input type="text" id="repo" placeholder="FluidFortune/blog">
+
+  <label>Branch</label>
+  <input type="text" id="branch" placeholder="main" value="main">
+
+  <button class="btn" id="runBtn" onclick="run()">GENERATE &amp; PUSH FEED.XML →</button>
+
+  <div class="log" id="log"></div>
+
+  <p class="note">This reads your existing <code>index.json</code>, builds a valid RSS feed from all posts, and pushes <code>feed.xml</code> to your blog repo. Run it once. After this, Punky maintains the feed automatically on every publish. You can delete this file when done.</p>
+</div>
+
+<script>
+function log(msg, type='') {
+  const el = document.getElementById('log');
+  el.classList.add('active');
+  el.innerHTML += `<div class="${type}">${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+async function run() {
+  const token  = document.getElementById('token').value.trim();
+  const repo   = document.getElementById('repo').value.trim();
+  const branch = document.getElementById('branch').value.trim() || 'main';
+
+  if (!token || !repo) { log('Enter token and repo first', 'err'); return; }
+
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.textContent = 'RUNNING…';
+  document.getElementById('log').innerHTML = '';
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: 'application/vnd.github+json',
+    'Content-Type': 'application/json'
+  };
+
+  try {
+    // 1. Fetch index.json
+    log('Fetching index.json…', 'info');
+    const indexRes = await fetch(`https://api.github.com/repos/${repo}/contents/index.json`, { headers });
+    if (!indexRes.ok) throw new Error('Could not fetch index.json — make sure the repo and token are correct');
+    const indexData = await indexRes.json();
+    const manifest  = JSON.parse(atob(indexData.content.replace(/\n/g,'')));
+    const posts     = manifest.posts || [];
+    log(`✓ Found ${posts.length} post${posts.length !== 1 ? 's' : ''} in index.json`, 'ok');
+
+    if (posts.length === 0) throw new Error('No posts found in index.json');
+
+    // Log each post
+    posts.forEach((p, i) => {
+      log(`  ${i+1}. ${p.title} (${new Date(p.created).toLocaleDateString()})`, '');
+    });
+
+    // 2. Build RSS feed
+    log('Building RSS feed…', 'info');
+    const items = posts.map(p => {
+      const pubDate = new Date(p.created).toUTCString();
+      const link    = `https://blog.fluidfortune.com/${p.url}`;
+      const tagCats = (p.tags||[]).map(t => '<category>' + t + '</category>').join(' ');
+      return `
+  <item>
+    <title><![CDATA[${p.title}]]></title>
+    <link>${link}</link>
+    <guid isPermaLink="true">${link}</guid>
+    <pubDate>${pubDate}</pubDate>
+    <description><![CDATA[${p.excerpt || p.title}]]></description>
+    <category>${p.category || 'tech'}</category>
+    ${tagCats}
+  </item>`;
+    }).join('');
+
+    const feed = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+  xmlns:atom="http://www.w3.org/2005/Atom"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Fluid Fortune — Field Notes</title>
+    <link>https://blog.fluidfortune.com</link>
+    <description>Technical deep-dives, opinions, and dispatches from the forge. No SEO bait. No sponsored content. Just signal.</description>
+    <language>en-us</language>
+    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
+    <atom:link href="https://blog.fluidfortune.com/feed.xml" rel="self" type="application/rss+xml"/>
+    <image>
+      <url>https://fluidfortune.com/courtjester.jpg</url>
+      <title>Fluid Fortune — Field Notes</title>
+      <link>https://blog.fluidfortune.com</link>
+    </image>${items}
+  </channel>
+</rss>`;
+
+    log('✓ RSS feed built', 'ok');
+
+    // 3. Check if feed.xml already exists
+    log('Checking for existing feed.xml…', 'info');
+    let feedSHA = null;
+    const feedCheck = await fetch(
+      `https://api.github.com/repos/${repo}/contents/feed.xml`, { headers }
+    );
+    if (feedCheck.ok) {
+      const fd = await feedCheck.json();
+      feedSHA = fd.sha;
+      log('  Found existing feed.xml — will update', '');
+    } else {
+      log('  No existing feed.xml — will create', '');
+    }
+
+    // 4. Push feed.xml
+    log('Pushing feed.xml to GitHub…', 'info');
+    const body = {
+      message: 'Bootstrap: generate feed.xml from existing posts',
+      content: btoa(unescape(encodeURIComponent(feed))),
+      branch
+    };
+    if (feedSHA) body.sha = feedSHA;
+
+    const pushRes = await fetch(
+      `https://api.github.com/repos/${repo}/contents/feed.xml`,
+      { method: 'PUT', headers, body: JSON.stringify(body) }
+    );
+    if (!pushRes.ok) {
+      const e = await pushRes.json();
+      throw new Error('Push failed: ' + (e.message || pushRes.status));
+    }
+
+    log('✓ feed.xml pushed successfully!', 'ok');
+    log('', '');
+    log('Your RSS feed is live at:', 'ok');
+    log('  https://blog.fluidfortune.com/feed.xml', 'ok');
+    log('', '');
+    log('Submit this URL to Google Search Console and any podcast/RSS directories.', 'info');
+    log('Punky will keep it updated automatically from here on.', 'info');
+
+    btn.textContent = '✓ DONE';
+
+  } catch(e) {
+    log('✗ Error: ' + e.message, 'err');
+    btn.disabled = false;
+    btn.textContent = 'GENERATE & PUSH FEED.XML →';
+  }
+}
+
+// Persist settings
+['token','repo','branch'].forEach(id => {
+  const el = document.getElementById(id);
+  const stored = localStorage.getItem('punky_bootstrap_' + id);
+  if (stored) el.value = stored;
+  el.addEventListener('input', () => localStorage.setItem('punky_bootstrap_' + id, el.value));
+});
+</script>
+</body>
+</html>
